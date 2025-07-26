@@ -13,7 +13,7 @@
 
 *Built with Next.js 15, React 19, and Tailwind CSS. Connect to any S3-compatible storage service and manage your files with ease.*
 
-[**🚀 Live Demo**](https://cloudybox-demo.vercel.app) • [**📖 Documentation**](#-quick-start) • [**🐛 Report Bug**](https://github.com/repostlyio/CloudyBox/issues) • [**💡 Request Feature**](https://github.com/repostlyio/CloudyBox/issues)
+  [**📖 Documentation**](#-quick-start) • [**🐛 Report Bug**](https://github.com/repostlyio/CloudyBox/issues) • [**💡 Request Feature**](https://github.com/repostlyio/CloudyBox/issues)
 
 </div>
 

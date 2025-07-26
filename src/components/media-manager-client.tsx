@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import { MediaGrid } from '@/components/media-grid'
 import { FilePreviewDialog } from '@/components/file-preview-dialog'
 import { DeleteConfirmDialog } from '@/components/delete-confirm-dialog'
-import type { S3File, MediaManagerConfig, ApiResponse, ListFilesResponse } from '@/types'
+import type { S3File, S3Folder, MediaManagerConfig, ApiResponse, ListFilesResponse } from '@/types'
 
 interface MediaManagerClientProps {
   mode: 'read-only' | 'full'
@@ -20,6 +20,8 @@ export function MediaManagerClient({
   embed 
 }: MediaManagerClientProps) {
   const [files, setFiles] = useState<S3File[]>([])
+  const [folders, setFolders] = useState<S3Folder[]>([])
+  const [currentPath, setCurrentPath] = useState('')
   const [loading, setLoading] = useState(true)
   const [previewFile, setPreviewFile] = useState<S3File | null>(null)
   const [deleteFile, setDeleteFile] = useState<S3File | null>(null)
@@ -32,17 +34,22 @@ export function MediaManagerClient({
 
   const isEmbedded = embed
 
-  // Load files on component mount
+  // Load files on component mount and when path changes
   useEffect(() => {
     loadFiles()
-  }, [])
+  }, [currentPath])
 
   const loadFiles = async () => {
     try {
       setLoading(true)
       setError(null)
       
-      const response = await fetch('/api/media/list')
+      const url = new URL('/api/media/list', window.location.origin)
+      if (currentPath) {
+        url.searchParams.set('prefix', currentPath)
+      }
+      
+      const response = await fetch(url)
       const data: ApiResponse<ListFilesResponse> = await response.json()
       
       if (!data.success) {
@@ -69,6 +76,7 @@ export function MediaManagerClient({
       })
       
       setFiles(filesWithDates)
+      setFolders(data.data?.folders || [])
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load files'
       setError(message)
@@ -81,9 +89,9 @@ export function MediaManagerClient({
   const handleUpload = async (uploadFiles: File[]) => {
     try {
       const uploadPromises = uploadFiles.map(async (file) => {
-        // Generate unique key
+        // Generate unique key with current path
         const timestamp = Date.now()
-        const key = `${timestamp}-${file.name}`
+        const key = currentPath ? `${currentPath}${timestamp}-${file.name}` : `${timestamp}-${file.name}`
         
         // Get pre-signed upload URL
         const urlResponse = await fetch('/api/media/upload-url', {
@@ -160,6 +168,10 @@ export function MediaManagerClient({
     setPreviewFile(file)
   }
 
+  const handleNavigate = (path: string) => {
+    setCurrentPath(path)
+  }
+
   if (error && !files.length) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -179,18 +191,20 @@ export function MediaManagerClient({
   }
 
   return (
-    <div className={`min-h-screen bg-background ${isEmbedded ? 'p-4' : 'p-8'}`}>
+    <div className={`min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30 ${isEmbedded ? 'p-4' : 'p-8'}`}>
       {!isEmbedded && (
-        <div className="max-w-7xl mx-auto mb-8">
+        <div className="max-w-7xl mx-auto mb-12">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">CloudyBox</h1>
-              <p className="text-muted-foreground">
+            <div className="space-y-3">
+              <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                CloudyBox
+              </h1>
+              <p className="text-gray-600 text-lg font-medium">
                 Manage your S3 media files with ease
               </p>
             </div>
             {config.mode === 'read-only' && (
-              <div className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
+              <div className="text-sm font-medium text-orange-700 bg-gradient-to-r from-orange-100 to-orange-200 px-4 py-2 rounded-2xl border border-orange-200/50 shadow-sm">
                 Read-Only Mode
               </div>
             )}
@@ -201,10 +215,13 @@ export function MediaManagerClient({
       <div className={`${isEmbedded ? '' : 'max-w-7xl mx-auto'}`}>
         <MediaGrid
           files={files}
+          folders={folders}
+          currentPath={currentPath}
           loading={loading}
           onDelete={(file) => setDeleteFile(file)}
           onPreview={handlePreview}
           onUpload={config.mode === 'full' ? handleUpload : undefined}
+          onNavigate={handleNavigate}
           config={config}
         />
       </div>

@@ -34,7 +34,7 @@ const corsConfiguration = {
 async function configureCORS() {
   try {
     const command = new PutBucketCorsCommand({
-      Bucket: process.env.S3_BUCKET || 'repostly-staging',
+      Bucket: process.env.S3_BUCKET!,
       CORSConfiguration: corsConfiguration,
     })
 

@@ -39,19 +39,41 @@ interface FileCardProps {
 const getFileIcon = (type: string) => {
   switch (type) {
     case 'image':
-      return <div className="w-8 h-8 bg-blue-100 rounded-md flex items-center justify-center">
-        <Eye className="w-4 h-4 text-blue-600" />
-      </div>
+      return (
+        <div className="w-12 h-12 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl flex items-center justify-center border border-blue-200/50">
+          <Eye className="w-6 h-6 text-blue-600" />
+        </div>
+      )
     case 'video':
-      return <Video className="w-8 h-8 text-purple-600" />
+      return (
+        <div className="w-12 h-12 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl flex items-center justify-center border border-purple-200/50">
+          <Video className="w-6 h-6 text-purple-600" />
+        </div>
+      )
     case 'audio':
-      return <Music className="w-8 h-8 text-green-600" />
+      return (
+        <div className="w-12 h-12 bg-gradient-to-br from-green-50 to-green-100 rounded-xl flex items-center justify-center border border-green-200/50">
+          <Music className="w-6 h-6 text-green-600" />
+        </div>
+      )
     case 'document':
-      return <FileText className="w-8 h-8 text-red-600" />
+      return (
+        <div className="w-12 h-12 bg-gradient-to-br from-red-50 to-red-100 rounded-xl flex items-center justify-center border border-red-200/50">
+          <FileText className="w-6 h-6 text-red-600" />
+        </div>
+      )
     case 'archive':
-      return <Archive className="w-8 h-8 text-orange-600" />
+      return (
+        <div className="w-12 h-12 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl flex items-center justify-center border border-orange-200/50">
+          <Archive className="w-6 h-6 text-orange-600" />
+        </div>
+      )
     default:
-      return <File className="w-8 h-8 text-gray-600" />
+      return (
+        <div className="w-12 h-12 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl flex items-center justify-center border border-gray-200/50">
+          <File className="w-6 h-6 text-gray-600" />
+        </div>
+      )
   }
 }
 
@@ -127,15 +149,15 @@ export function FileCard({
   return (
     <Card 
       className={cn(
-        "group cursor-pointer transition-all duration-200 hover:shadow-md",
-        isSelected && "ring-2 ring-primary"
+        "group cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-black/5 hover:-translate-y-1 border-0 bg-white/50 backdrop-blur-sm",
+        isSelected && "ring-2 ring-primary ring-offset-2 shadow-lg shadow-primary/10"
       )}
       onClick={() => onSelect?.(file)}
     >
-      <CardContent className="p-4">
-        <div className="space-y-3">
+      <CardContent className="p-5">
+        <div className="space-y-4">
           {/* File Preview */}
-          <div className="relative aspect-square bg-muted rounded-lg overflow-hidden">
+          <div className="relative aspect-square bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl overflow-hidden border border-gray-200/50">
             {isImage && !imageError && signedUrl ? (
               <Image
                 src={signedUrl}
@@ -156,11 +178,11 @@ export function FileCard({
             )}
             
             {/* Actions overlay */}
-            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-2">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-end justify-center pb-4 gap-2">
               {onPreview && (
                 <Button
                   size="sm"
-                  variant="secondary"
+                  className="bg-white/90 hover:bg-white text-gray-900 shadow-lg backdrop-blur-sm border-0 h-8 w-8 p-0"
                   onClick={(e) => {
                     e.stopPropagation()
                     onPreview(file)
@@ -171,7 +193,7 @@ export function FileCard({
               )}
               <Button
                 size="sm"
-                variant="secondary"
+                className="bg-white/90 hover:bg-white text-gray-900 shadow-lg backdrop-blur-sm border-0 h-8 w-8 p-0"
                 onClick={(e) => {
                   e.stopPropagation()
                   handleDownload()
@@ -183,10 +205,10 @@ export function FileCard({
           </div>
 
           {/* File Info */}
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="flex items-start justify-between gap-2">
               <h3 
-                className="text-sm font-medium truncate" 
+                className="text-sm font-semibold text-gray-900 truncate leading-5" 
                 title={file.name}
               >
                 {file.name}
@@ -194,7 +216,11 @@ export function FileCard({
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-gray-100 rounded-lg"
+                  >
                     <MoreVertical className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -229,14 +255,17 @@ export function FileCard({
               </DropdownMenu>
             </div>
 
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <Badge variant="outline" className="text-xs">
-                {file.type}
+            <div className="flex items-center justify-between">
+              <Badge 
+                variant="secondary" 
+                className="text-xs font-medium bg-gray-100 text-gray-700 border-0 px-2 py-1 rounded-md"
+              >
+                {file.type.toUpperCase()}
               </Badge>
-              <span>{formatFileSize(file.size)}</span>
+              <span className="text-xs font-medium text-gray-500">{formatFileSize(file.size)}</span>
             </div>
 
-            <div className="text-xs text-muted-foreground">
+            <div className="text-xs text-gray-400 font-medium">
               {formatDate(file.lastModified)}
             </div>
           </div>

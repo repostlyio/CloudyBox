@@ -6,7 +6,7 @@ import {
 } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { createS3Client, getS3Config } from '@/lib/s3-client'
-import type { S3File, S3Config, ListFilesResponse } from '@/types'
+import type { S3File, S3Folder, S3Config, ListFilesResponse } from '@/types'
 
 export class S3Service {
   private client
@@ -33,33 +33,50 @@ export class S3Service {
         Prefix: prefix,
         MaxKeys: maxKeys,
         ContinuationToken: continuationToken,
+        Delimiter: '/', // This enables folder detection
       })
 
       const response = await this.client.send(command)
       
-      const files: S3File[] = (response.Contents || []).map((item) => {
-        // Ensure we have a valid date
-        let lastModified: Date
-        if (item.LastModified && item.LastModified instanceof Date) {
-          lastModified = item.LastModified
-        } else if (item.LastModified) {
-          lastModified = new Date(item.LastModified)
-        } else {
-          lastModified = new Date()
-        }
+      // Process files
+      const files: S3File[] = (response.Contents || [])
+        .filter(item => item.Key !== prefix) // Exclude the current folder itself
+        .map((item) => {
+          // Ensure we have a valid date
+          let lastModified: Date
+          if (item.LastModified && item.LastModified instanceof Date) {
+            lastModified = item.LastModified
+          } else if (item.LastModified) {
+            lastModified = new Date(item.LastModified)
+          } else {
+            lastModified = new Date()
+          }
 
+          return {
+            key: item.Key!,
+            name: item.Key!.split('/').pop() || item.Key!,
+            size: item.Size || 0,
+            lastModified,
+            url: '', // We'll generate signed URLs on demand
+            type: this.getFileType(item.Key!),
+          }
+        })
+
+      // Process folders (CommonPrefixes)
+      const folders: S3Folder[] = (response.CommonPrefixes || []).map((prefixObj) => {
+        const folderKey = prefixObj.Prefix!
+        const folderName = folderKey.slice(prefix.length).replace(/\/$/, '') // Remove trailing slash
+        
         return {
-          key: item.Key!,
-          name: item.Key!.split('/').pop() || item.Key!,
-          size: item.Size || 0,
-          lastModified,
-          url: '', // We'll generate signed URLs on demand
-          type: this.getFileType(item.Key!),
+          key: folderKey,
+          name: folderName,
+          type: 'folder' as const,
         }
       })
 
       return {
         files,
+        folders,
         hasMore: response.IsTruncated || false,
         continuationToken: response.NextContinuationToken,
       }

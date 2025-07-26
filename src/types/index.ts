@@ -7,6 +7,14 @@ export interface S3File {
   type: string
 }
 
+export interface S3Folder {
+  key: string
+  name: string
+  type: 'folder'
+}
+
+export type S3Item = S3File | S3Folder
+
 export interface S3Config {
   accessKeyId: string
   secretAccessKey: string
@@ -37,6 +45,7 @@ export interface ApiResponse<T = unknown> {
 
 export interface ListFilesResponse {
   files: S3File[]
+  folders: S3Folder[]
   hasMore: boolean
   continuationToken?: string
 }

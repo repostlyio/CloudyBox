@@ -18,8 +18,7 @@
 </div>
 
 ---
-
-![CloudyBox Screenshot]([https://via.placeholder.com/800x400/3b82f6/ffffff?text=CloudyBox+Media+Manager](https://ph-files.imgix.net/0d3a5ccc-57cd-4261-8006-bcff4223d2da.png?auto=compress&codec=mozjpeg&cs=strip&auto=format&fm=pjpg&w=1100&h=561&fit=max&frame=1&dpr=1)
+![CloudyBox Screenshot](https://ph-files.imgix.net/0d3a5ccc-57cd-4261-8006-bcff4223d2da.png?auto=compress&codec=mozjpeg&cs=strip&auto=format&fm=pjpg&w=1100&h=561&fit=max&frame=1&dpr=1)
 
 ## ✨ Features
 

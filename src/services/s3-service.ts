@@ -13,13 +13,20 @@ export class S3Service {
   private bucket: string
 
   constructor(config?: S3Config) {
-    const s3Config = config || getS3Config()
-    if (!s3Config) {
-      throw new Error('S3 configuration is required')
+    try {
+      const s3Config = config || getS3Config()
+      if (!s3Config) {
+        throw new Error('S3 configuration is required. Please ensure AWS credentials are properly configured.')
+      }
+      
+      this.client = createS3Client(s3Config)
+      this.bucket = s3Config.bucket
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`S3 Service initialization failed: ${error.message}`)
+      }
+      throw new Error('S3 Service initialization failed: Unknown error')
     }
-    
-    this.client = createS3Client(s3Config)
-    this.bucket = s3Config.bucket
   }
 
   async listFiles(

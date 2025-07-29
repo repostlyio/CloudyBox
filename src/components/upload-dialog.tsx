@@ -18,7 +18,7 @@ import type { UploadProgress } from '@/types'
 interface UploadDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onUpload?: (files: File[]) => void
+  onUpload?: (files: File[], onProgress?: (file: File, progress: number, status: 'uploading' | 'completed' | 'error', error?: string) => void) => Promise<void>
   maxFileSize?: number
   allowedFileTypes?: string[]
 }
@@ -70,41 +70,32 @@ export function UploadDialog({
     setIsUploading(true)
     const validFiles = uploadQueue.filter(item => item.status === 'pending')
     
-    // Simulate upload progress
-    for (let i = 0; i < validFiles.length; i++) {
-      const item = validFiles[i]
-      
+    // Progress callback to update individual file progress
+    const onProgress = (file: File, progress: number, status: 'uploading' | 'completed' | 'error', error?: string) => {
       setUploadQueue(prev => 
         prev.map(upload => 
-          upload.file === item.file 
-            ? { ...upload, status: 'uploading' as const }
-            : upload
-        )
-      )
-
-      // Simulate progress
-      for (let progress = 0; progress <= 100; progress += 10) {
-        setUploadQueue(prev => 
-          prev.map(upload => 
-            upload.file === item.file 
-              ? { ...upload, progress }
-              : upload
-          )
-        )
-        await new Promise(resolve => setTimeout(resolve, 100))
-      }
-
-      setUploadQueue(prev => 
-        prev.map(upload => 
-          upload.file === item.file 
-            ? { ...upload, status: 'completed' as const, progress: 100 }
+          upload.file === file 
+            ? { ...upload, progress, status, error }
             : upload
         )
       )
     }
 
-    onUpload(validFiles.map(item => item.file))
-    setIsUploading(false)
+    try {
+      // Call the actual upload function with progress callback
+      await onUpload(validFiles.map(item => item.file), onProgress)
+    } catch (error) {
+      // Mark any remaining files as errored
+      setUploadQueue(prev => 
+        prev.map(upload => 
+          upload.status === 'uploading' || upload.status === 'pending'
+            ? { ...upload, status: 'error' as const, error: error instanceof Error ? error.message : 'Upload failed' }
+            : upload
+        )
+      )
+    } finally {
+      setIsUploading(false)
+    }
   }
 
   const clearCompleted = () => {

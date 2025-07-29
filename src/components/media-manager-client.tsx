@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Toaster } from '@/components/ui/sonner'
 import { toast } from 'sonner'
 import { MediaGrid } from '@/components/media-grid'
@@ -34,12 +34,7 @@ export function MediaManagerClient({
 
   const isEmbedded = embed
 
-  // Load files on component mount and when path changes
-  useEffect(() => {
-    loadFiles()
-  }, [currentPath])
-
-  const loadFiles = async () => {
+  const loadFiles = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -84,49 +79,68 @@ export function MediaManagerClient({
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentPath])
 
-  const handleUpload = async (uploadFiles: File[]) => {
+  // Load files on component mount and when path changes
+  useEffect(() => {
+    loadFiles()
+  }, [loadFiles])
+
+  const handleUpload = async (uploadFiles: File[], onProgress?: (file: File, progress: number, status: 'uploading' | 'completed' | 'error', error?: string) => void) => {
     try {
       const uploadPromises = uploadFiles.map(async (file) => {
-        // Generate unique key with current path
-        const timestamp = Date.now()
-        const key = currentPath ? `${currentPath}${timestamp}-${file.name}` : `${timestamp}-${file.name}`
-        
-        // Get pre-signed upload URL
-        const urlResponse = await fetch('/api/media/upload-url', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            key,
-            contentType: file.type,
-          }),
-        })
-        
-        const urlData: ApiResponse<{ uploadUrl: string }> = await urlResponse.json()
-        
-        if (!urlData.success || !urlData.data?.uploadUrl) {
-          throw new Error('Failed to get upload URL')
-        }
-        
-        // Upload file using pre-signed URL
-        const uploadResponse = await fetch(urlData.data.uploadUrl, {
-          method: 'PUT',
-          body: file,
-          headers: {
-            'Content-Type': file.type,
-          },
-        })
-        
-        if (!uploadResponse.ok) {
-          // Check if it's a CORS error
-          if (uploadResponse.status === 0 || uploadResponse.type === 'opaque') {
-            throw new Error('CORS Error: Please check your S3 bucket CORS configuration. Make sure it allows PUT requests from your domain.')
+        try {
+          // Start upload for this file
+          onProgress?.(file, 0, 'uploading')
+          
+          // Generate unique key with current path
+          const timestamp = Date.now()
+          const key = currentPath ? `${currentPath}${timestamp}-${file.name}` : `${timestamp}-${file.name}`
+          
+          // Get pre-signed upload URL
+          const urlResponse = await fetch('/api/media/upload-url', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              key,
+              contentType: file.type,
+            }),
+          })
+          
+          const urlData: ApiResponse<{ uploadUrl: string }> = await urlResponse.json()
+          
+          if (!urlData.success || !urlData.data?.uploadUrl) {
+            throw new Error('Failed to get upload URL')
           }
-          throw new Error(`Upload failed (${uploadResponse.status}): ${uploadResponse.statusText}`)
+          
+          // Update progress to 50% after getting URL
+          onProgress?.(file, 50, 'uploading')
+          
+          // Upload file using pre-signed URL
+          const uploadResponse = await fetch(urlData.data.uploadUrl, {
+            method: 'PUT',
+            body: file,
+            headers: {
+              'Content-Type': file.type,
+            },
+          })
+          
+          if (!uploadResponse.ok) {
+            // Check if it's a CORS error
+            if (uploadResponse.status === 0 || uploadResponse.type === 'opaque') {
+              throw new Error('CORS Error: Please check your S3 bucket CORS configuration. Make sure it allows PUT requests from your domain.')
+            }
+            throw new Error(`Upload failed (${uploadResponse.status}): ${uploadResponse.statusText}`)
+          }
+          
+          // Mark as completed
+          onProgress?.(file, 100, 'completed')
+          return key
+        } catch (error) {
+          // Mark as failed
+          onProgress?.(file, 0, 'error', error instanceof Error ? error.message : 'Upload failed')
+          throw error
         }
-        
-        return key
       })
       
       await Promise.all(uploadPromises)
@@ -137,6 +151,7 @@ export function MediaManagerClient({
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Upload failed'
       toast.error(message)
+      throw err // Re-throw to let the dialog handle it
     }
   }
 

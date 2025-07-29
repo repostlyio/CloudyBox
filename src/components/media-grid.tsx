@@ -24,7 +24,7 @@ interface MediaGridProps {
   currentPath?: string
   onDelete?: (file: S3File) => void
   onPreview?: (file: S3File) => void
-  onUpload?: (files: File[]) => void
+  onUpload?: (files: File[], onProgress?: (file: File, progress: number, status: 'uploading' | 'completed' | 'error', error?: string) => void) => Promise<void>
   onNavigate?: (path: string) => void
   config?: MediaManagerConfig
   className?: string

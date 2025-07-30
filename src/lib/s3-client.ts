@@ -32,11 +32,40 @@ export function getS3Config(): S3Config | null {
     return null
   }
 
+  const accessKeyId = process.env.AWS_ACCESS_KEY_ID
+  const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY
+  const region = process.env.AWS_REGION || 'us-east-1'
+  const bucket = process.env.S3_BUCKET
+  const endpoint = process.env.S3_ENDPOINT
+
+  // Validate required configuration
+  if (!accessKeyId || accessKeyId.trim() === '') {
+    throw new Error('AWS_ACCESS_KEY_ID environment variable is required and cannot be empty')
+  }
+
+  if (!secretAccessKey || secretAccessKey.trim() === '') {
+    throw new Error('AWS_SECRET_ACCESS_KEY environment variable is required and cannot be empty')
+  }
+
+  if (!bucket || bucket.trim() === '') {
+    throw new Error('S3_BUCKET environment variable is required and cannot be empty')
+  }
+
+  // Validate region format (basic check)
+  if (!/^[a-z0-9-]+$/.test(region)) {
+    throw new Error('Invalid AWS_REGION format. Must contain only lowercase letters, numbers, and hyphens')
+  }
+
+  // Validate bucket name format (basic S3 bucket naming rules)
+  if (!/^[a-z0-9.-]+$/.test(bucket) || bucket.length < 3 || bucket.length > 63) {
+    throw new Error('Invalid S3_BUCKET format. Must be 3-63 characters, lowercase letters, numbers, dots, and hyphens only')
+  }
+
   return {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
-    region: process.env.AWS_REGION || 'us-east-1',
-    bucket: process.env.S3_BUCKET || '',
-    endpoint: process.env.S3_ENDPOINT,
+    accessKeyId,
+    secretAccessKey,
+    region,
+    bucket,
+    endpoint,
   }
 }
